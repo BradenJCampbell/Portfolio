@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Demo</title>
+<link rel="stylesheet" type="text/css" href="css/demo.css" />
+<style type="text/css">
+
+div#scroller  {
+    width:166px; height:54px;
+    margin:1em 0;
+    padding:6px;
+    background-color:#fff;
+    border:1px solid #ddd;
+    color:#032071;
+    }
+    
+div#wn {
+    position:relative;
+	width:166px; height:54px;
+	overflow:hidden;
+    }
+    
+div#wn div.block {
+    height:54px;
+    text-align: center;
+}
+
+div#wn div.block a img {
+    border: none;
+}
+
+div#wn div.block a:link,
+div#wn div.block a:visited,
+div#wn div.block a:hover {
+    color:#0F2F8D;
+    text-decoration: none;
+    }
+
+
+</style>
+<script src="js/dw_paus_scroller.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+if ( DYN_WEB.Scroll_Div.isSupported() ) {
+    
+    DYN_WEB.Event.add( window, 'load', function() {
+		var wndo = new DYN_WEB.Scroll_Div('wn', 'lyr');
+		
+		// see info online at http://www.dyn-web.com/code/scrollers/pausing/documentation.php
+		var options = {
+			axis:'v',
+			bRepeat:true,
+			repeatId:'rpt',
+			dur:800, // duration of glide-scroll
+			bPauseResume:true,
+			distance: 54, // distance of glide-scroll
+			pauseDelay: 5000,
+			resumeDelay: 300
+			};
+		
+		wndo.makePauseAuto( options );
+		
+	});
+}
+
+</script>
+</head>
+<body>
+
+<h1>Pausing Scroller - Vertical Demo</h1>
+
+<div id="scroller">
+    <div id="wn">
+        <div id="lyr">
+            <div class="block"><a href="http://www.dyn-web.com/"><img src="images/dwc-btn.gif" alt="" /><br>at dyn-web.com</a>
+    </div>
+            <div class="block"><a href="http://www.dyn-web.com/">Lots of free scripts!<br>JavaScript and PHP</a></div>
+            <div class="block"><a href="/">Check back often.<br>More to come!</a></div>
+            <!-- repeat -->
+            <div id="rpt" class="block"><a href="http://www.dyn-web.com/"><img src="images/dwc-btn.gif" alt="" /><br>at dyn-web.com</a></div>
+        </div>
+    </div>
+</div>
+
+
+<p>&nbsp;</p>
+
+<p>Find information on setup <a href="http://www.dyn-web.com/code/scrollers/pausing/documentation.php">online</a>.</p>
+
+<p>Thank you for visiting <a href="http://www.dyn-web.com/">dyn-web.com</a>!</p>
+
+
+</body>
+</html>

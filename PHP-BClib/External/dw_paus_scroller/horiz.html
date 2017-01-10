@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Demo</title>
+<link rel="stylesheet" type="text/css" href="css/demo.css" />
+<style type="text/css">
+
+div#wn	{ 
+	position:relative;
+	width:166px; height:166px;
+	overflow:hidden;
+	border:1px solid #ddd;
+	}
+
+div#wn table {
+	border-spacing:0;
+    border-collapse:collapse;
+	}
+	
+div#wn td {
+	padding: 8px;
+	}
+</style>
+<script src="js/dw_paus_scroller.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+if ( DYN_WEB.Scroll_Div.isSupported() ) {
+    
+    DYN_WEB.Event.add( window, 'load', function() {
+		var wndo = new DYN_WEB.Scroll_Div('wn', 'lyr');
+		
+		// see info online at http://www.dyn-web.com/code/scrollers/pausing/documentation.php
+		var options = {
+			axis:'h',
+			bRepeat:true,
+			repeatId:'rpt',
+			dur:600, // duration of glide-scroll
+			bPauseResume:true,
+			distance: 166, // distance of glide-scroll
+			pauseDelay: 3000, 
+			resumeDelay: 300,
+			startDelay: 1000
+			};
+		
+		wndo.makePauseAuto( options );
+		
+	});
+}
+
+</script>
+</head>
+<body>
+
+<h1>Pausing Scroller - Horizontal Demo</h1>
+
+
+<div id="wn">
+    <div id="lyr" class="content">
+    <table>
+        <tr>
+            <td><img src="images/sunset.gif" width="150" height="150" alt="" /></td>
+        	<td><img src="images/cave-art.gif" width="150" height="150" alt="" /></td>
+        	<td><img src="images/swans.gif" width="150" height="150" alt="" /></td>
+        	<td><img src="images/design1.gif" width="150" height="150" alt="" /></td>
+        	<td><img src="images/mandala2.gif" width="150" height="150" alt="" /></td>
+        	<td><img src="images/turtle.gif" width="150" height="150" alt="" /></td>
+            <td><img src="images/mandala1.gif" width="150" height="150" alt="" /></td>
+			<td><img src="images/mex-sun.gif" width="150" height="150" alt="" /></td>
+            
+            <!-- repeat first item(s)-->
+            <td id="rpt"><img src="images/sunset.gif" width="150" height="150" alt="" /></td>
+            <!-- if width = 2 images, repeat at least first 2 -->
+            <td><img src="images/cave-art.gif" width="150" height="150" alt="" /></td>
+        </tr>
+    </table>
+    </div>
+</div>  <!-- end wn div -->
+
+
+<p>&nbsp;</p>
+
+<p>Find information on setup <a href="http://www.dyn-web.com/code/scrollers/pausing/documentation.php">online</a>.</p>
+
+<p>Thank you for visiting <a href="http://www.dyn-web.com/">dyn-web.com</a>!</p>
+
+
+
+</body>
+</html>

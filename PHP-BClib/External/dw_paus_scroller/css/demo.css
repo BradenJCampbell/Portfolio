@@ -1,0 +1,6 @@
+/* styles for demos, not related to code */
+body { font: 14px/1.3 verdana, arial, helvetica, sans-serif; }
+h1 { font-size:1.3em; }
+h2 { font-size:1.2em; }
+a:link { color:#33c; }    
+a:visited { color:#339; }
