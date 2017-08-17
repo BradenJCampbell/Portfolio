@@ -5,52 +5,6 @@ using UnityEngine.EventSystems;
 
 public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHandler, IPointerUpHandler {
 
-    [System.Serializable]
-    public class GameEngineWorld
-    {
-        Vector3 up = Vector3.up;
-        Vector3 forward = Vector3.forward;
-        Vector3 right = Vector3.right;
-
-        public bool Changed
-        {
-            get
-            {
-                return (!this._assesed || Vector3.Distance(this.up, this._up) != 0 || Vector3.Distance(this.forward, this._forward) != 0 || Vector3.Distance(this.right, this._right) != 0);
-            }
-        }
-
-        public Plane Plane
-        {
-            get
-            {
-                this._assess();
-                return this._plane;
-            }
-        }
-
-        public float PlanarAngle(Vector3 v)
-        {
-            return MathHelper.PlanarAngle(this._up, this._right, v, false);
-        }
-
-        private void _assess()
-        {
-            if (this.Changed)
-            {
-                this._up = this.up;
-                this._forward = this.forward;
-                this._right = this.right;
-                this._plane = new Plane(this._forward, Vector3.zero);
-                this._assesed = true;
-            }
-        }
-        private Vector3 _up;
-        private Vector3 _forward;
-        private Vector3 _right;
-        private bool _assesed;
-        private Plane _plane;
-    }
 
     public GameEngineWorld World;
     public Camera GameCamera;
@@ -61,6 +15,7 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
     {
         this._dragging = false;
         this._last_drag = Vector2.zero;
+        this._last_drag_frame = Time.frameCount;
         float world_dist;
         Ray pos_ray = new Ray(this.GameCamera.transform.position, this.World.Plane.normal);
         if (this.World.Plane.Raycast(pos_ray, out world_dist))
@@ -71,6 +26,7 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
 
     // Update is called once per frame
     void FixedUpdate () {
+        /*
         if (this.IsDragging)
         {
             this.CurlSpinner.Spin(CurlSpinDirection.Clockwise);
@@ -78,6 +34,22 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
         else
         {
             this.CurlSpinner.Spin(CurlSpinDirection.Decelerate);
+        }
+        */
+        /*
+        Debug.Log(this.World.PlanarAngle(this._last_drag));
+        if (this.IsDragFrame)
+        { 
+            this.CurlSpinner.Spin(this.DragAngle * 50);
+        }
+        else
+        {
+            this.CurlSpinner.Spin(CurlSpinDirection.Decelerate);
+        }
+        */
+        if (this.DragRay.direction.magnitude > 0 && !this.CurlSpinner.ApplyRotationalForce(this.DragRay.origin, this.DragRay.origin + this.DragRay.direction, this.DragRay.direction.magnitude * 1000))
+        {
+            Debug.Log("not spinning - rigidbody problems?");
         }
     }
 
@@ -94,6 +66,14 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
         return false;
     }
 
+    public bool IsDragFrame
+    {
+        get
+        {
+            return this.IsDragging && Mathf.Abs(Time.frameCount - this._last_drag_frame) < 2;
+        }
+    }
+
     public bool IsDragging
     {
         protected set
@@ -102,7 +82,7 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
         }
         get
         {
-            return this._dragging;
+             return this._dragging;
         }
     }
 
@@ -112,9 +92,21 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
         {
             if (this.IsDragging)
             {
-                return this._drag_dir;
+                return this._drag_dir.direction;
             }
             return Vector3.zero;
+        }
+    }
+
+    public Ray DragRay
+    {
+        get
+        {
+            if (this.IsDragging)
+            {
+                return this._drag_dir;
+            }
+            return new Ray(Vector3.zero, Vector3.zero);
         }
     }
 
@@ -136,9 +128,10 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
         Vector3 worldTouch;
         if (this.WorldPosition(pev.position, out worldTouch))
         {
-            this._drag_dir = worldTouch - this._last_drag;
+            this._drag_dir = new Ray(this._last_drag, worldTouch - this._last_drag);
             this._drag_angle = this.World.PlanarAngle(worldTouch) - this.World.PlanarAngle(this._last_drag);
             this._last_drag = worldTouch;
+            this._last_drag_frame = Time.frameCount;
         }
         this.IsDragging = true;
     }
@@ -157,6 +150,7 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
     private bool _dragging;
     private Vector3 _last_drag;
     private Vector3 _world_center;
-    private Vector3 _drag_dir;
+    private Ray _drag_dir;
     private float _drag_angle;
+    private float _last_drag_frame;
 }
