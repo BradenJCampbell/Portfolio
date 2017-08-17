@@ -85,7 +85,7 @@ public static class StaticHelper
         {
             Target *= -1;
         }
-        return BuildVector(Vector3.RotateTowards(Target, QuasiNormal, 90 * Mathf.Deg2Rad * Mathf.PI, Target.magnitude + QuasiNormal.magnitude), Target.magnitude);
+        return StaticHelper.BuildVector(Vector3.RotateTowards(Target, QuasiNormal, 90 * Mathf.Deg2Rad * Mathf.PI, Target.magnitude + QuasiNormal.magnitude), Target.magnitude);
     }
 
     static public Vector3 RotateTowardsMagnitude(Vector3 start, Vector3 end, float radians_angle, float magnitude)
@@ -102,7 +102,7 @@ public static class StaticHelper
 
     static public float AnglePlane(Vector3 vector, Plane plane)
     {
-        return AnglePlane(vector, plane.normal);
+        return StaticHelper.AnglePlane(vector, plane.normal);
     }
     static public float AnglePlane(Vector3 vector, Vector3 plane_normal)
     {
@@ -116,7 +116,7 @@ public static class StaticHelper
     }
     public static bool Intersect(out Vector3 intersect, Ray Line1, Ray Line2)
     {
-        return Intersect(out intersect, Line1.origin, Line1.direction, Line2.origin, Line2.direction);
+        return StaticHelper.Intersect(out intersect, Line1.origin, Line1.direction, Line2.origin, Line2.direction);
     }
     public static bool IntersectSegment(out Vector3 intersect, Vector3 origin1, Vector3 direction1, Vector3 origin2, Vector3 direction2)
     {
