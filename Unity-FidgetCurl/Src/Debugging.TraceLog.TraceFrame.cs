@@ -104,7 +104,7 @@ public partial class TraceLog
             }
             catch (Exception ex)
             {
-                GameEngine.DebugLog(ex);
+                GameEngine.Debug.Log(ex);
                 return false;
             }
         }

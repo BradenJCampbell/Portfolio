@@ -114,6 +114,10 @@ namespace BCUnity
 
         public PathMovement CompoundMovement(float DegreesOfFreedom)
         {
+            if (this.LastMovement == null)
+            {
+                return null;
+            }
             return this.CompoundMovement(this.LastMovement.Direction, DegreesOfFreedom);
         }
 
@@ -123,7 +127,7 @@ namespace BCUnity
             PathMovement end = null;
             for (int i = 0; Mathf.Abs(this._movement[i].Direction.Angle(Direction)) <= DegreesOfFreedom && i < this._movement.Count; i++)
             {
-                GameEngine.TraceLog.Update("PathTracker.CompoundMovement[" + i + "]");
+                GameEngine.Debug.TraceLog.Update("PathTracker.CompoundMovement[" + i + "]");
                 start = this._movement[i];
                 if (end == null)
                 {

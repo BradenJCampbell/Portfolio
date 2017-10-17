@@ -8,7 +8,7 @@ using System.Threading;
 
 public partial class TraceLog
 {
-    public int NoteSize = 400;
+    public int NoteSize = 40;
 
     public bool SpawnThread = false;
 
@@ -39,6 +39,11 @@ public partial class TraceLog
     {
         this._init();
         this._output_stream = OutputStreamWriter;
+    }
+
+    ~TraceLog()
+    {
+        this.Close();
     }
 
     private void _init()
@@ -82,7 +87,7 @@ public partial class TraceLog
                 }
                 catch (Exception ex)
                 {
-                    GameEngine.DebugLog(ex);
+                    GameEngine.Debug.Log(ex);
                     ret = false;
                 }
             }

@@ -7,47 +7,48 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHandler, IPointerUpHandler {
+public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHandler, IPointerUpHandler {
 
     public int FrameFlex = 0;
     public bool InputCenteredInScreen = false;
     public GameEngineWorld World;
     public Camera GameCamera;
     public CurlSpinnerBehaviour CurlSpinner;
+    public bool UseTraceLog = false;
+    public bool UseDebug = false;
 
     // Use this for initialization
     void Start()
     {
-        if (GameEngineBehaviour._instance == null)
-        {
-            GameEngineBehaviour._instance = this;
-            GameEngine.TraceLog.Enabled = true;
-            this.World.GameCamera = this.GameCamera;
-            this._line = this.transform.FindChild("Line");
-            this._line.gameObject.SetActive(false);
-            this._dragging = false;
-            this._path = new PathTracker();
-            SmartVector tl = this.World.ScreenRatioToWorldPosition(-1, -1);
-            SmartVector tr = this.World.ScreenRatioToWorldPosition(1, -1);
-            SmartVector bl = this.World.ScreenRatioToWorldPosition(-1, 1);
-            SmartVector br = this.World.ScreenRatioToWorldPosition(1, 1);
-            this.DeployBumper(tl, tr, 1, 2000);
-            this.DeployBumper(tl, bl, 1, 2000);
-            this.DeployBumper(tr, br, 1, 2000);
-            this.DeployBumper(bl, br, 1, 2000);
-        }
+        GameEngine.Debug.TraceLog.Enabled = this.UseTraceLog;
+        GameEngine.Debug.Enabled = this.UseDebug;
+        this.World.GameCamera = this.GameCamera;
+        this._dragging = false;
+        this._path = new PathTracker();
+        this.Debug.Enabled = true;
+        GameEngine.Bumpers.Template.Type = BumperType.Cube;
+        GameEngine.Bumpers.Template.width = 1;
+        GameEngine.Bumpers.Template.height = 2000;
+        GameEngine.Bumpers.Deploy(BumperType.Cube, this.World.Bounds.TopLeft, this.World.Bounds.TopRight, 1, 2000);
+        GameEngine.Bumpers.Deploy(BumperType.Cube, this.World.Bounds.TopLeft, this.World.Bounds.BottomLeft, 1, 2000);
+        GameEngine.Bumpers.Deploy(BumperType.Cube, this.World.Bounds.TopRight, this.World.Bounds.BottomRight, 1, 2000);
+        GameEngine.Bumpers.Deploy(BumperType.Cube, this.World.Bounds.BottomLeft, this.World.Bounds.BottomRight, 1, 2000);
+        SmartVector cap_start = this.World.ScreenRatioToWorldPosition((float)-0.5, (float)0.5);
+        SmartVector cap_end = this.World.ScreenRatioToWorldPosition((float)-0.5, (float)-0.5);
+        GameEngine.Bumpers.Capsule(cap_start, cap_end, 1, 1, true, 2);
     }
 
     // Update is called once per frame
     void FixedUpdate () {
-        GameEngine.TraceLog.Update("GameEngineBehaviour.FixedUpdate");
-        this.label(Time.fixedTime.ToString() + "(" + this.CurlSpinner.Mass + ")");
+        GameEngine.Debug.TraceLog.Update("GameEngineBehaviour.FixedUpdate");
+        this.Debug.Update();
+        this.label(this.CurlSpinner.Score + "   " + Time.fixedTime.ToString() + "(" + this.CurlSpinner.Mass + ")");
         ///GameEngine.DebugLog("Update Start (path size: " + this._path.PointCount + ")");
         if (this.CurlSpinner.Errors.Count > 0)
         {
             foreach (DebugMessage dm in this.CurlSpinner.Errors)
             {
-                GameEngine.DebugLog(dm);
+                GameEngine.Debug.Log(dm);
             }
             this.CurlSpinner.Errors.Clear();
         }
@@ -84,23 +85,11 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
         this.transform.FindChild("Canvas").FindChild("Timer").GetComponent<Text>().text = str;
     }
 
-    public bool DeployBumper(SmartVector Start, SmartVector End, float width = 1, float height = 1)
-    {
-        GameEngine.TraceLog.Update("GameEngineBehaviour.DeployBumper");
-        BumperBehaviour bump = GameObject.FindObjectOfType<BumperBehaviour>();
-        if (bump == null)
-        {
-            return false;
-        }
-        bump.Deploy(Start, End, width);
-        return true;
-    }
-
     public bool IsDragFrame
     {
         get
         {
-            GameEngine.TraceLog.Update("GameEngineBehaviour.IsDragFrame");
+            GameEngine.Debug.TraceLog.Update("GameEngineBehaviour.IsDragFrame");
             return this.IsDragging && Time.frameCount - this._path.LastMovementFrame <= this.FrameFlex;
         }
     }
@@ -113,17 +102,17 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
         }
         get
         {
-            GameEngine.TraceLog.Update("GameEngineBehaviour.IsDragging");
+            GameEngine.Debug.TraceLog.Update("GameEngineBehaviour.IsDragging");
             return this._dragging;
         }
     }
 
     public void OnDrag(PointerEventData pev)
     {
-        GameEngine.TraceLog.Update("GameEngineBehaviour.OnDrag");
+        GameEngine.Debug.TraceLog.Update("GameEngineBehaviour.OnDrag");
         if (!this.IsDragging)
         {
-            GameEngine.TraceLog.Update("GameEngineBehaviour.OnDrag.ClearPath");
+            GameEngine.Debug.TraceLog.Update("GameEngineBehaviour.OnDrag.ClearPath");
             this._path.Clear();
         }
         //  the position in world space of the touch
@@ -137,13 +126,13 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
 
     public void OnPointerDown(PointerEventData pev)
     {
-        GameEngine.TraceLog.Update("GameEngineBehaviour.OnPointerDown");
+        GameEngine.Debug.TraceLog.Update("GameEngineBehaviour.OnPointerDown");
         this.OnDrag(pev);
     }
 
     public void OnPointerUp(PointerEventData pev)
     {
-        GameEngine.TraceLog.Update("GameEngineBehaviour.OnPointerUp");
+        GameEngine.Debug.TraceLog.Update("GameEngineBehaviour.OnPointerUp");
         PathTracker.PathMovement mov = this._path.CompoundMovement(15);
         if (mov != null)
         {
@@ -153,157 +142,21 @@ public class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHand
         this.IsDragging = false;
     }
 
-    private Transform _make_debug_line
-    {
-        get
-        {
-            Transform clone = UnityEngine.Object.Instantiate(this._line);
-            clone.gameObject.SetActive(true);
-            clone.SetParent(this.transform);
-            return clone;
-        }
-    }
-
-    private void _transform_color(Transform t, Color col)
-    {
-        Renderer rend = t.GetComponent<Renderer>();
-        Material mat = new Material(rend.material.shader);
-        mat.color = col;
-        rend.material = mat;
-    }
-
-    public void DebugLine(SmartVector Start, SmartVector End)
-    {
-        Transform line = this._make_debug_line;
-        Start -= this.World.Forward;
-        End -= this.World.Forward;
-        this.World.Place(line, Start, End, 1, 1);
-    }
-
-    public void DebugLine(SmartVector Start, SmartVector End, Color col)
-    {
-        Transform line = this._make_debug_line;
-        Start -= this.World.Forward;
-        End -= this.World.Forward;
-        this.World.Place(line, Start, End, 1, 1);
-        this._transform_color(line, col);
-    }
-
-    public void DebugPoint(SmartVector Point)
-    {
-        Transform line = this._make_debug_line;
-        Point -= this.World.Forward;
-        line.position = (Vector3)Point.World;
-    }
-
-    public void DebugPoint(SmartVector Point, Color col)
-    {
-        Transform line = this._make_debug_line;
-        Point -= this.World.Forward;
-        line.position = (Vector3)Point.World;
-        this._transform_color(line, col);
-    }
-
     public void OnApplicationQuit()
     {
-        if (this._trace_log != null)
-        {
-            this._trace_log.Close();
-        }
+        this.Debug.Close();
     }
 
-    public TraceLog TraceLog
+    protected static GameEngineBehaviour _instance
     {
         get
         {
-            if (this._trace_log == null)
-            {
-                this._trace_log = new TraceLog(Application.dataPath + "\\fidget_trace.txt");
-                GameEngine.DebugLog("TraceLog to " + Application.dataPath + "\\fidget_trace.txt");
-                this._trace_log.SpawnThread = false;
-                this._trace_log.Enabled = false;
-            }
-            return this._trace_log;
+            return GameObject.FindObjectOfType<GameEngineBehaviour>();
         }
-
     }
 
-    private Transform _line;
     private bool _dragging;
     private SmartVector _last_drag;
     private PathTracker _path;
     private int _debug_frame;
-    private TraceLog _trace_log;
-    protected static GameEngineBehaviour _instance;
-}
-
-public class GameEngine : GameEngineBehaviour
-{
-    public static int RecursionMaxLevel = 0;
-
-    public static GameEngineWorld GameWorld
-    {
-        get
-        {
-            GameEngine.TraceLog.Update("GameEngineWorld.GameWorld");
-            if (GameEngine._instance == null)
-            {
-                return null;
-            }
-            return GameEngine._instance.World;
-        }
-    }
-
-    public static new void DebugLine(SmartVector Start, SmartVector End)
-    {
-        _instance.DebugLine(Start, End);
-    }
-
-    public static new void DebugLine(SmartVector Start, SmartVector End, Color col)
-    {
-        _instance.DebugLine(Start, End, col);
-    }
-
-    public static new void DebugPoint(SmartVector Point)
-    {
-        _instance.DebugPoint(Point);
-    }
-
-    public static new void DebugPoint(SmartVector Point, Color col)
-    {
-        _instance.DebugPoint(Point, col);
-    }
-
-    public static SmartVector ScreenRatioToWorldPosition(float x, float y)
-    {
-        if (GameEngine._instance == null)
-        {
-            return SmartVector.Zero;
-        }
-        return GameEngine._instance.World.ScreenRatioToWorldPosition(x, y);
-    }
-
-    public static bool Place(Transform Target, SmartVector Start, SmartVector End, float width, float height)
-    {
-        GameEngine.TraceLog.Update("GameEngineWorld.Place");
-        return GameEngine.GameWorld.Place(Target, Start, End, width, height);
-    }
-
-    public static void DebugLog(DebugMessage Message)
-    {
-        Debug.Log(Message.Frame + " (" + Message.ElapsedTime + "):  " + Message.Message);
-    }
-
-    public static void DebugLog(object Message)
-    {
-        Debug.Log(Time.frameCount + " (" + Time.fixedTime + "):   " + Message);
-    }
-
-    public static new TraceLog TraceLog
-    {
-        get
-        {
-            return _instance.TraceLog;
-        }
-    }
 }

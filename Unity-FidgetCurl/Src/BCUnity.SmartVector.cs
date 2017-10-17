@@ -97,6 +97,11 @@ namespace BCUnity
             return new BCUnity.SmartVector(sv1.World._pos - sv2.World.Localize(sv1)._pos, sv1.Type, sv1.Space);
         }
 
+        public static SmartVector operator -(SmartVector sv)
+        {
+            return -1 * sv;
+        }
+
         public static SmartVector operator *(SmartVector sv, float f)
         {
             return new SmartVector(sv._pos * f, sv.Type, sv.Space);

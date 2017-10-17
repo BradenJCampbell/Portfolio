@@ -17,11 +17,43 @@ public struct GameEngineWorldBounds
         }
     }
 
+    public SmartVector TopLeft
+    {
+        get
+        {
+            return this.World.ScreenRatioToWorldPosition(-1, -1);
+        }
+    }
+
+    public SmartVector TopRight
+    {
+        get
+        {
+            return this.World.ScreenRatioToWorldPosition(1, -1);
+        }
+    }
+
+    public SmartVector BottomLeft
+    {
+        get
+        {
+            return this.World.ScreenRatioToWorldPosition(-1, 1);
+        }
+    }
+
+    public SmartVector BottomRight
+    {
+        get
+        {
+            return this.World.ScreenRatioToWorldPosition(1, 1);
+        }
+    }
+
     public float Left
     {
         get
         {
-            return this.World.ScreenRatioToWorldPosition(-1, -1).x;
+            return this.TopLeft.x;
         }
     }
 
@@ -29,7 +61,7 @@ public struct GameEngineWorldBounds
     {
         get
         {
-            return this.World.ScreenRatioToWorldPosition(1, 1).x;
+            return this.TopRight.x;
         }
     }
 
@@ -37,7 +69,7 @@ public struct GameEngineWorldBounds
     {
         get
         {
-            return this.World.ScreenRatioToWorldPosition(1, 1).y;
+            return this.TopLeft.y;
         }
     }
 
@@ -45,7 +77,7 @@ public struct GameEngineWorldBounds
     {
         get
         {
-            return this.World.ScreenRatioToWorldPosition(-1, -1).y;
+            return this.BottomLeft.y;
         }
     }
 
@@ -170,7 +202,7 @@ public class GameEngineWorld
     public bool Place(Transform Target, SmartVector Start, SmartVector End, float width, float height)
     {
         this._assess();
-        GameEngine.TraceLog.Update("GameWorld.Place");
+        GameEngine.Debug.TraceLog.Update("GameWorld.Place");
         try
         {
             SmartVector absol = End - Start;
@@ -183,7 +215,7 @@ public class GameEngineWorld
         }
         catch (Exception ex)
         {
-            GameEngine.DebugLog("GameWorld.Place " + ex);
+            GameEngine.Debug.Log("GameWorld.Place " + ex);
             return false;
         }
     }

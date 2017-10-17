@@ -4,13 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum CurlSpinDirection
-{
-    Clockwise = 1,
-    CounterClockwise = -1,
-    Decelerate = 0
-}
-
 public partial class CurlSpinnerBehaviour : MonoBehaviour {
 
     [System.Serializable]
@@ -18,16 +11,35 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
     {
         public bool ClosestPoint;
         public bool Reflect;
+        public bool Forces;
     }
 
     public CurlSpinnerDebugOptions DebugOptions;
-    public float MaximumSpinSpeed = 900;
+    public bool FarMirrorsNear = false;
+    public float SpinSpeedMultiplier = (float)1.0;
+    public float ThrowSpeedMultiplier = (float)1.0;
 
     public Transform Body
     {
         get
         {
+            if (this._spin_body == null)
+            {
+                this._spin_body = this.transform.FindChild("Sphere").transform;
+            }
             return this._spin_body;
+        }
+    }
+
+    public Rigidbody PhysicsBody
+    {
+        get
+        {
+            if (this._physics_body == null)
+            {
+                this._physics_body = this.transform.GetComponentInChildren<Rigidbody>();
+            }
+            return this._physics_body;
         }
     }
 
@@ -35,7 +47,7 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
     {
         get
         {
-            return this._physics_body.mass;
+            return this.PhysicsBody.mass;
         }
     }
 
@@ -44,9 +56,9 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         get
         {
             return SmartVector.CreateWorldPoint(
-                this._physics_body.transform.position.x, 
-                this._physics_body.transform.position.y, 
-                this._physics_body.transform.position.z
+                this.PhysicsBody.transform.position.x, 
+                this.PhysicsBody.transform.position.y, 
+                this.PhysicsBody.transform.position.z
             );
         }
     }
@@ -56,10 +68,10 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         get
         {
             return SmartVector.CreateLocalVector(
-                this._physics_body.velocity.x,
-                this._physics_body.velocity.y,
-                this._physics_body.velocity.z,
-                this._physics_body.transform
+                this.PhysicsBody.velocity.x,
+                this.PhysicsBody.velocity.y,
+                this.PhysicsBody.velocity.z,
+                this.PhysicsBody.transform
             );
         }
     }
@@ -72,7 +84,7 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         }
     }
 
-    public DebugMessages Errors
+    protected DebugMessagesContainer error_writer
     {
         get
         {
@@ -80,77 +92,91 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
             {
                 this._errors = new DebugMessagesContainer();
             }
-            return this._errors.Reader;
+            return this._errors;
+        }
+    }
+
+    public DebugMessages Errors
+    {
+        get
+        {
+            return this.error_writer.Reader;
+        }
+    }
+
+    public int Score
+    {
+        get
+        {
+            return this._score;
         }
     }
 
     // Use this for initialization
     void Start () {
-        GameEngine.TraceLog.Update("CurlSpinBehaviour.Start");
+        GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.Start");
         this._last_rand = Time.fixedTime;
-        this._physics_body = this.transform.GetComponentInChildren<Rigidbody>();
-        this._spin_body = this.transform.FindChild("Sphere").transform;
-        this._pieces = new CurlSpinnerBehaviour.PieceSet(this, this._physics_body);
-        if (this._errors == null)
+        this._pieces = new CurlSpinnerBehaviour.PieceSet(this, this.PhysicsBody);
+        if (this.PhysicsBody == null)
         {
-            this._errors = new DebugMessagesContainer();
-        }
-        if (this._physics_body == null)
-        {
-            this._errors.Add("no rigidbody");
+            this.error_writer.Add("no rigidbody");
         }
         Transform capsule = this.transform.FindChild("Capsule");
         capsule.gameObject.SetActive(false);
-        this.Pieces.Add(0, capsule, SmartVector.CreateWorldPoint(0, 8, 0), 2);
-        this.Pieces.Add(0, capsule, SmartVector.CreateWorldPoint(0, -8, 0), 2);
-        this.Pieces.Add(0, capsule, SmartVector.CreateWorldPoint(8, 0, 0), 2);
-        this.Pieces.Add(0, capsule, SmartVector.CreateWorldPoint(-8, 0, 0), 2);
+        this.Pieces.Add(20, capsule, SmartVector.CreateWorldPoint(0, 8, 0), 2);
+        this.Pieces.Add(20, capsule, SmartVector.CreateWorldPoint(0, -8, 0), 2);
+        this.Pieces.Add(20, capsule, SmartVector.CreateWorldPoint(8, 0, 0), 2);
+        this.Pieces.Add(20, capsule, SmartVector.CreateWorldPoint(-8, 0, 0), 2);
     }
 
     // Update is called once per frame
     void FixedUpdate () {
-        GameEngine.TraceLog.Update("CurlSpinBehaviour.FixedUpdate");
-        this._last_velocity = this._physics_body.velocity;
+        GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.FixedUpdate");
+        this._last_velocity = SmartVector.CreateWorldDirection(
+            this.PhysicsBody.velocity.x, 
+            this.PhysicsBody.velocity.y, 
+            this.PhysicsBody.velocity.z
+        );
         //this._random_pieces();
     }
 
     private void _random_pieces()
     {
-        GameEngine.TraceLog.Update("CurlSpinner.random_pieces");
-        if (this._physics_body.velocity.magnitude == 0 && Time.fixedTime >= this._last_rand + 2)
+        GameEngine.Debug.TraceLog.Update("CurlSpinner.random_pieces");
+        if (this.PhysicsBody.velocity.magnitude == 0 && Time.fixedTime >= this._last_rand + 2)
         {
             Vector3 rand = UnityEngine.Random.insideUnitCircle.normalized * 10;
             this.Pieces.Remove(0);
             SmartVector local = this.LocalPoint(rand.x, rand.y, rand.z);
-            this.Pieces.Add(200, this.transform.FindChild("Capsule"), local, 1);
+            this.Pieces.Add(20, this.transform.FindChild("Capsule"), local, 1);
             this._last_rand = Time.fixedTime;
         }
     }
 
     public void OnCollisionEnter(Collision collision)
     {
-        GameEngine.TraceLog.Update("CurlSpinBehaviour.OnCollisionEnter");
-        SmartVector velocity = SmartVector.CreateWorldDirection(
-            this._last_velocity.x, 
-            this._last_velocity.y, 
-            this._last_velocity.z
-        );
+        GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.OnCollisionEnter");
         SmartVector collision_normal = SmartVector.CreateWorldDirection(
                 collision.contacts[0].normal.x,
                 collision.contacts[0].normal.y,
                 collision.contacts[0].normal.z
         );
-        SmartVector reflect = GameEngine.GameWorld.Reflect(collision_normal, velocity).Normalized * velocity.Magnitude;
+        Bumper bump = GameEngine.Bumpers.Lookup(collision.transform);
+        if (bump != null)
+        {
+            this._score += bump.ScoreValue;
+        }
+        SmartVector reflect = GameEngine.GameWorld.Reflect(collision_normal, this._last_velocity).Normalized * this._last_velocity.Magnitude;
         if (this.DebugOptions.Reflect)
         {
-            GameEngine.DebugLine(SmartVector.Zero, collision_normal * 15, Color.yellow);
-            GameEngine.DebugLog("SpinnerReflect.Normal " + collision_normal);
-            GameEngine.DebugLine(SmartVector.Zero, velocity * 15, Color.red);
-            GameEngine.DebugLog("SpinnerReflect.Velocity " + velocity);
-            GameEngine.DebugLine(SmartVector.Zero, reflect * 15, Color.green);
-            GameEngine.DebugLog("SpinnerReflect.Reflect " + reflect);
+            GameEngine.Debug.Line(SmartVector.Zero, collision_normal * 15, Color.yellow, 2);
+            GameEngine.Debug.Log("SpinnerReflect.Normal " + collision_normal);
+            GameEngine.Debug.Line(SmartVector.Zero, this._last_velocity * 15, Color.red, 2);
+            GameEngine.Debug.Log("SpinnerReflect.Velocity " + this._last_velocity);
+            GameEngine.Debug.Line(SmartVector.Zero, reflect * 15, Color.green, 2);
+            GameEngine.Debug.Log("SpinnerReflect.Reflect " + reflect);
         }
-        this._physics_body.velocity = (Vector3)reflect;
+        this.PhysicsBody.velocity = (Vector3)reflect;
     }
 
     public SmartVector LocalPoint(float x, float y, float z = 0)
@@ -167,12 +193,12 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
     
     protected bool recursive_line_cast(SmartVector Start, SmartVector End, out RaycastHit hit)
     {
-        GameEngine.TraceLog.Update("CurlSpinBehaviour.recursive_line_cast");
+        GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.recursive_line_cast");
         SmartVector curr = Start;
         SmartVector micro_shift = (End - Start).Normalized * (float)0.0001;
         for (int loops = 1; this.line_cast(curr, End, out hit); loops++)
         {
-            //GameEngine.TraceLog.Update("CurlSpinBehaviour.recursive_line_cast[" + loops + ", " + hit.transform.gameObject.name + "(" + hit.transform.gameObject.GetInstanceID() + ")]");
+            //GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.recursive_line_cast[" + loops + ", " + hit.transform.gameObject.name + "(" + hit.transform.gameObject.GetInstanceID() + ")]");
             foreach (Collider c in this.transform.GetComponentsInChildren<Collider>())
             {
                 if (hit.collider == c)
@@ -187,7 +213,7 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
 
     public bool ClosestPoint(SmartVector worldPoint, out SmartVector result)
     {
-        GameEngine.TraceLog.Update("CurlSpinBehaviour.ClosestPoint");
+        GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.ClosestPoint");
         RaycastHit hit;
         result = SmartVector.Zero;
         bool found = false;
@@ -201,8 +227,8 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
             result = SmartVector.CreateWorldPoint(hit.point.x, hit.point.y, hit.point.z);
             if (this.DebugOptions.ClosestPoint)
             {
-                GameEngine.DebugPoint(result, Color.green);
-                GameEngine.DebugPoint(worldPoint, Color.red);
+                GameEngine.Debug.Point(result, Color.green);
+                GameEngine.Debug.Point(worldPoint, Color.red);
             }
         }
         return found;
@@ -210,8 +236,8 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
 
     public bool ApplyDirectionalForce(SmartVector direction, float magnitude = 0)
     {
-        GameEngine.TraceLog.Update("CurlSpinBehaviour.ApplyDirectionalForce");
-        if (this._physics_body == null)
+        GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.ApplyDirectionalForce");
+        if (this.PhysicsBody == null)
         {
             return false;
         }
@@ -219,13 +245,18 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         {
             direction = direction.Normalized * magnitude;
         }
-        this._physics_body.AddForce((Vector3)direction.World, ForceMode.Impulse);
+        direction *= this.ThrowSpeedMultiplier;
+        this.PhysicsBody.AddForce((Vector3)direction.World, ForceMode.Impulse);
+        if (this.DebugOptions.Forces)
+        {
+            GameEngine.Debug.Line(this.WorldPosition, this.WorldPosition + direction, Color.green, 2);
+        }
         return true;
     }
 
     public bool ApplyRotationalForce(SmartVector forceStart, SmartVector forceEnd, float magnitude = 0)
     {
-        GameEngine.TraceLog.Update("CurlSpinBehaviour.ApplyRotationalForce");
+        GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.ApplyRotationalForce");
         SmartVector force = forceEnd - forceStart;
         if (magnitude > 0)
         {
@@ -233,34 +264,52 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         }
         SmartVector near_point;
         SmartVector far_point;
-        SmartVector near_offset = forceStart - this.WorldPosition;
-        bool near_exists = this.ClosestPoint(this.WorldPosition + near_offset, out near_point);
-        bool far_exists = this.ClosestPoint(this.WorldPosition - near_offset, out far_point);
+        SmartVector force_offset = forceStart - this.WorldPosition;
+        bool near_exists = this.ClosestPoint(this.WorldPosition + force_offset, out near_point);
+        bool far_exists;
         if (!near_exists)
         {
-            this._errors.Add("ApplyRotationalForce: no near point for " + forceStart + " spinner world position at " + this.WorldPosition);
+            this.error_writer.Add("ApplyRotationalForce: no near point for " + forceStart + " spinner world position at " + this.WorldPosition);
+        }
+        if (this.FarMirrorsNear)
+        {
+            SmartVector near_offset = near_point - this.WorldPosition;
+            far_point = this.WorldPosition - near_offset;
+            far_exists = true;
+        }
+        else
+        {
+            far_exists = this.ClosestPoint(this.WorldPosition - force_offset, out far_point);
         }
         if (!far_exists)
         {
-            this._errors.Add("ApplyRotationalForce: no far point for " + forceStart + " spinner world position at " + this.WorldPosition);
+            this.error_writer.Add("ApplyRotationalForce: no far point for " + forceStart + " spinner world position at " + this.WorldPosition);
         }
-        if (this._physics_body == null)
+        if (this.PhysicsBody == null)
         {
             return false;
         }
         if (near_exists && far_exists)
         {
-            this._physics_body.AddForceAtPosition((Vector3)force / 2, (Vector3)near_point);
-            this._physics_body.AddForceAtPosition(-(Vector3)force / 2, (Vector3)far_point);
+            SmartVector near_force = this.SpinSpeedMultiplier * force / 2;
+            SmartVector far_force = this.SpinSpeedMultiplier * -force / 2;
+            if (this.DebugOptions.Forces)
+            {
+                GameEngine.Debug.Line(near_point, near_point + (20 * near_force.Normalized), Color.cyan, 2);
+                GameEngine.Debug.Line(far_point, far_point + (20 * far_force.Normalized), Color.cyan, 2);
+            }
+            this.PhysicsBody.AddForceAtPosition((Vector3)near_force, (Vector3)near_point);
+            this.PhysicsBody.AddForceAtPosition((Vector3)far_force, (Vector3)far_point);
             return true;
         }
         return false;
     }
 
+    private int _score;
     private Rigidbody _physics_body;
     private Transform _spin_body;
     private DebugMessagesContainer _errors;
-    private Vector3 _last_velocity;
+    private SmartVector _last_velocity;
     private PieceSet _pieces;
     private float _last_rand;
 }

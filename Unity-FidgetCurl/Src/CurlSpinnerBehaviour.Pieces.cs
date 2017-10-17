@@ -66,7 +66,7 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour
         public Piece(PieceSet Set, float Mass, Transform Template, SmartVector Start, SmartVector End, float width) : this(Set, Mass, Template)
         {
             GameEngine.Place(this.Transform, Start, End, width, 1);
-            GameEngine.DebugLog(GameEngine.GameWorld.Bounds + " Spinner.Piece[" + this.ID + "] " + this.Position);
+            GameEngine.Debug.Log(GameEngine.GameWorld.Bounds + " Spinner.Piece[" + this.ID + "] " + this.Position);
             this.Transform.parent = this.Spinner.Body;
         }
 
@@ -126,7 +126,6 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour
         {
             Piece newPiece = new Piece(this, Mass, Template, Start, End, width);
             this._body.mass += Mass;
-            //GameEngine.DebugLine(Start, End);
             this._pieces.Add(newPiece);
             return true;
         }
