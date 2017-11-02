@@ -76,6 +76,14 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         }
     }
 
+    public float SpinSpeed
+    {
+        get
+        {
+            return Mathf.Abs(this.PhysicsBody.angularVelocity.z);
+        }
+    }
+
     public PieceSet Pieces
     {
         get
@@ -104,7 +112,7 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         }
     }
 
-    public int Score
+    public float Score
     {
         get
         {
@@ -153,6 +161,14 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         }
     }
 
+    public void Reset()
+    {
+        this.transform.position = Vector3.zero;
+        this.PhysicsBody.velocity = Vector3.zero;
+        this.PhysicsBody.angularVelocity = Vector3.zero;
+        this.Body.rotation = Quaternion.identity;
+    }
+
     public void OnCollisionEnter(Collision collision)
     {
         GameEngine.Debug.TraceLog.Update("CurlSpinBehaviour.OnCollisionEnter");
@@ -164,7 +180,7 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         Bumper bump = GameEngine.Bumpers.Lookup(collision.transform);
         if (bump != null)
         {
-            this._score += bump.ScoreValue;
+            this._score += this.SpinSpeed * bump.ScoreValue;
         }
         SmartVector reflect = GameEngine.GameWorld.Reflect(collision_normal, this._last_velocity).Normalized * this._last_velocity.Magnitude;
         if (this.DebugOptions.Reflect)
@@ -305,7 +321,7 @@ public partial class CurlSpinnerBehaviour : MonoBehaviour {
         return false;
     }
 
-    private int _score;
+    private float _score;
     private Rigidbody _physics_body;
     private Transform _spin_body;
     private DebugMessagesContainer _errors;

@@ -125,7 +125,7 @@ namespace BCUnity
         {
             PathMovement start = null;
             PathMovement end = null;
-            for (int i = 0; Mathf.Abs(this._movement[i].Direction.Angle(Direction)) <= DegreesOfFreedom && i < this._movement.Count; i++)
+            for (int i = 0; i < this._movement.Count && Mathf.Abs(this._movement[i].Direction.Angle(Direction)) <= DegreesOfFreedom; i++)
             {
                 GameEngine.Debug.TraceLog.Update("PathTracker.CompoundMovement[" + i + "]");
                 start = this._movement[i];

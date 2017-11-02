@@ -10,7 +10,7 @@ public enum BumperType
     Capsule
 }
 
-public struct BumperSetup
+public class BumperSetup
 {
     public BumperType Type;
     public SmartVector Start;
@@ -18,35 +18,68 @@ public struct BumperSetup
     public float width;
     public float height;
     public bool visible;
-    public int ScoreMultiplier;
+    public int Score;
+    public Color Colour;
 
     public Bumper Deploy()
     {
-        return GameEngine.Bumpers.Deploy(this.Type, this.Start, this.End, this.width, this.height, this.visible, this.ScoreMultiplier);
+        return this.Deploy(this.Start, this.End);
+    }
+
+    public Bumper Deploy(SmartVector Start, SmartVector End)
+    {
+        return this.Deploy(Start, End, this.Colour);
+    }
+
+    public Bumper Deploy(SmartVector Start, SmartVector End, Color Colour)
+    {
+        Bumper ret = GameEngine.Bumpers.Deploy(this.Type, Start, End, this.width, this.height, this.visible, this.Score);
+        ret.Color = Colour;
+        return ret;
     }
 }
 
 public class Bumper
 {
-    public int ScoreValue;
+    public float ScoreValue;
 
     public Bumper(Transform Prototype, SmartVector Start, SmartVector End, float width, float height)
     {
-        this._transform = Object.Instantiate(Prototype);
-        this._transform.gameObject.SetActive(true);
-        GameEngine.Place(this._transform, Start, End, width, height);
-        this._transform.parent = GameObject.FindObjectOfType<BumperManagerBehaviour>().transform;
+        if (Prototype == null)
+        {
+            throw new System.Exception("no prototype given");
+        }
+        this._manip = new BCUnity.TransformManipulator(BCUnity.TransformPool.Clone(Prototype));
+        if (this.Transform == null)
+        {
+            throw new System.Exception("unable to clone");
+        }
+        this._manip.Active = true;
+        this._manip.Place(Start, End, width, height);
+        this._manip.Parent = Bumper._canvas;
+    }
+
+    public Color Color
+    {
+        get
+        {
+            return this._manip.Color;
+        }
+        set
+        {
+            this._manip.Color = value;
+        }
     }
 
     public bool Visible
     {
         get
         {
-            return this._transform.GetComponent<Renderer>().enabled;
+            return this._manip.Visible;
         }
         set
         {
-            this._transform.GetComponent<Renderer>().enabled = value;
+            this._manip.Visible = value;
         }
     }
 
@@ -54,7 +87,7 @@ public class Bumper
     {
         get
         {
-            return this._transform;
+            return this._manip.Transform;
         }
     }
 
@@ -62,32 +95,32 @@ public class Bumper
     {
         get
         {
-            return this._transform.GetInstanceID();
+            return this._manip.ID;
         }
     }
 
-    private Transform _transform;
+    public void Destroy()
+    {
+        this._manip.Remove();
+    }
+
+    private TransformManipulator _manip;
+
+    private static Transform _canvas
+    {
+        get
+        {
+            return GameEngine.Bumpers.transform;
+        }
+    }
 }
 
 public class BumperManagerBehaviour : MonoBehaviour {
 
-    public BumperSetup Template;
-
-
 	// Use this for initialization
 	void Start () {
         GameEngine.Debug.TraceLog.Update("BumperBehaviour.Start");
-        this.Template = new BumperSetup();
-        this.Template.width = 1;
-        this.Template.height = 1;
-        this.Template.visible = false;
         this.get_prototype(BumperType.Cube);
-        this._instances = new Dictionary<int, Bumper>();
-    }
-
-    // Update is called once per frame
-    void Update () {
-        GameEngine.Debug.TraceLog.Update("BumperBehaviour.Update");
     }
 
     public Bumper Cube(SmartVector Start, SmartVector End, float width = 1, float height = 1, bool visible = false, int score_value = 0)
@@ -136,6 +169,15 @@ public class BumperManagerBehaviour : MonoBehaviour {
         return this.Lookup(t.GetInstanceID());
     }
 
+    public void Clear()
+    {
+        foreach (int i in this.IDs)
+        {
+            this._instances[i].Destroy();
+        }
+        this._instances.Clear();
+    }
+
     protected Transform get_prototype(BumperType type)
     {
         if (this._protos == null)
@@ -152,6 +194,44 @@ public class BumperManagerBehaviour : MonoBehaviour {
         return this._protos[type];
     }
 
+    public int[] IDs
+    {
+        get
+        {
+            int[] ret = new int[this._instances.Keys.Count];
+            this._instances.Keys.CopyTo(ret, 0);
+            return ret;
+        }
+    }
+
+    public BumperSetup Template
+    {
+        get
+        {
+            if (this._template == null)
+            {
+                this._template = new BumperSetup();
+                this._template.width = 1;
+                this._template.height = 1;
+                this._template.visible = false;
+            }
+            return this._template;
+        }
+    }
+
+    private Dictionary<int, Bumper> _instances
+    {
+        get
+        {
+            if (this.__instances == null)
+            {
+                this.__instances = new Dictionary<int, Bumper>();
+            }
+            return this.__instances;
+        }
+    }
+
     private Dictionary<BumperType, Transform> _protos;
-    private Dictionary<int, Bumper> _instances;
+    private Dictionary<int, Bumper> __instances;
+    private BumperSetup _template;
 }

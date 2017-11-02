@@ -9,6 +9,18 @@ public class GameEngine : GameEngineBehaviour
 {
     public static int RecursionMaxLevel = 0;
 
+    public static new bool Pause
+    {
+        get
+        {
+            return GameEngine._instance.Pause;
+        }
+        set
+        {
+            GameEngine._instance.Pause = value;
+        }
+    }
+
     public static GameEngineWorld GameWorld
     {
         get
@@ -30,6 +42,20 @@ public class GameEngine : GameEngineBehaviour
         }
     }
 
+    public static CurlSpinnerBehaviour Spinner
+    {
+        get
+        {
+            try
+            {
+                return GameObject.FindObjectOfType<CurlSpinnerBehaviour>();
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+    }
     public static BumperManagerBehaviour Bumpers
     {
         get
@@ -44,13 +70,30 @@ public class GameEngine : GameEngineBehaviour
             }
         }
     }
+
+    public static CameraBehaviour GameCamera
+    {
+        get
+        {
+            return GameObject.FindObjectOfType<CameraBehaviour>();
+        }
+    }
+
+    public static BackgroundBehaviour Background
+    {
+        get
+        {
+            return GameObject.FindObjectOfType<BackgroundBehaviour>();
+        }
+    }
+
     public static SmartVector ScreenRatioToWorldPosition(float x, float y)
     {
         if (GameEngine._instance == null)
         {
             return SmartVector.Zero;
         }
-        return GameEngine._instance.World.ScreenRatioToWorldPosition(x, y);
+        return GameEngine.GameCamera.ScreenRatioToWorldPosition(x, y);
     }
 
     public static bool Place(Transform Target, SmartVector Start, SmartVector End, float width, float height)

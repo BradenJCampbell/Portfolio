@@ -6,7 +6,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointerDownHandler, IPointerUpHandler
+public partial class GameEngineBehaviour : MonoBehaviour
 {
     public class EngineDebug
     {
@@ -14,10 +14,12 @@ public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointer
         {
             public debug_item(Transform proto, Transform parent)
             {
-                this.transform = UnityEngine.Object.Instantiate(proto);
+                this.transform = BCUnity.TransformPool.Clone(proto);
                 this.transform.gameObject.SetActive(true);
                 this.transform.SetParent(parent);
-                this.expires = 0;
+                this.transform.localScale = new Vector3(1, 1, 1);
+                this.transform.rotation = Quaternion.identity;
+                this.expires = float.PositiveInfinity;
             }
 
             public debug_item(Transform proto, Transform parent, SmartVector start, SmartVector end) : this(proto, parent)
@@ -27,7 +29,7 @@ public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointer
 
             public void Remove()
             {
-                UnityEngine.Object.Destroy(this.transform.gameObject);
+                BCUnity.TransformPool.Destroy(this.transform);
             }
 
             public Color Color
@@ -62,7 +64,8 @@ public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointer
         public EngineDebug(GameEngineBehaviour instance, Transform line)
         {
             this._ins = instance;
-            this._renders = new List<debug_item>();
+            this._renders = new Dictionary<float, List<debug_item>>();
+            this._unused = new Stack<debug_item>();
             this._log = new TraceLog(Application.dataPath + "\\fidget_trace.txt");
             this._log.SpawnThread = false;
             this._log.Enabled = false;
@@ -81,21 +84,21 @@ public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointer
         public void Line(SmartVector Start, SmartVector End)
         {
             debug_item new_item = new debug_item(this._line, this._ins.transform, Start + GameEngine.GameWorld.Forward, End + GameEngine.GameWorld.Forward);
-            this._renders.Add(new_item);
+            this._add(new_item);
         }
 
         public void Line(SmartVector Start, SmartVector End, Color col)
         {
             debug_item new_item = new debug_item(this._line, this._ins.transform, Start + GameEngine.GameWorld.Forward, End + GameEngine.GameWorld.Forward);
             new_item.Color = col;
-            this._renders.Add(new_item);
+            this._add(new_item);
         }
 
         public void Line(SmartVector Start, SmartVector End, float lifetime)
         {
             debug_item new_item = new debug_item(this._line, this._ins.transform, Start + GameEngine.GameWorld.Forward, End + GameEngine.GameWorld.Forward);
             new_item.expires = UnityEngine.Time.fixedTime + lifetime;
-            this._renders.Add(new_item);
+            this._add(new_item);
         }
 
         public void Line(SmartVector Start, SmartVector End, Color col, float lifetime)
@@ -103,14 +106,14 @@ public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointer
             debug_item new_item = new debug_item(this._line, this._ins.transform, Start + GameEngine.GameWorld.Forward, End + GameEngine.GameWorld.Forward);
             new_item.Color = col;
             new_item.expires = UnityEngine.Time.fixedTime + lifetime;
-            this._renders.Add(new_item);
+            this._add(new_item);
         }
 
         public void Point(SmartVector Point)
         {
             debug_item new_item = new debug_item(this._line, this._ins.transform);
             new_item.transform.position = (Vector3)(Point + GameEngine.GameWorld.Forward);
-            this._renders.Add(new_item);
+            this._add(new_item);
         }
 
         public void Point(SmartVector Point, Color col)
@@ -118,7 +121,16 @@ public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointer
             debug_item new_item = new debug_item(this._line, this._ins.transform);
             new_item.transform.position = (Vector3)(Point + GameEngine.GameWorld.Forward);
             new_item.Color = col;
-            this._renders.Add(new_item);
+            this._add(new_item);
+        }
+
+        public void Point(SmartVector Point, Color col, float lifetime)
+        {
+            debug_item new_item = new debug_item(this._line, this._ins.transform);
+            new_item.transform.position = (Vector3)(Point + GameEngine.GameWorld.Forward);
+            new_item.Color = col;
+            new_item.expires = UnityEngine.Time.fixedTime + lifetime;
+            this._add(new_item);
         }
 
         public void Log(DebugMessage Message)
@@ -133,16 +145,18 @@ public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointer
 
         public void Update()
         {
-            for (int i = 0; i < this._renders.Count;)
+            float[] keys = new float[this._renders.Keys.Count];
+            this._renders.Keys.CopyTo(keys, 0);
+            foreach (float t in keys)
             {
-                if (this._renders[i].Expired)
+                if (t <= Time.fixedTime)
                 {
-                    UnityEngine.Object.Destroy(this._renders[i].transform.gameObject);
-                    this._renders.RemoveAt(i);
-                }
-                else
-                {
-                    i++;
+                    for (int i = 0; i < this._renders[t].Count; i++)
+                    {
+                        BCUnity.TransformPool.Destroy(this._renders[t][i].transform);
+                    }
+                    this._renders[t].Clear();
+                    this._renders.Remove(t);
                 }
             }
         }
@@ -155,9 +169,19 @@ public partial class GameEngineBehaviour : MonoBehaviour, IDragHandler, IPointer
             }
         }
 
+        private void _add(debug_item new_item)
+        {
+            if (!this._renders.ContainsKey(new_item.expires))
+            {
+                this._renders.Add(new_item.expires, new List<debug_item>());
+            }
+            this._renders[new_item.expires].Add(new_item);
+        }
+
         private GameEngineBehaviour _ins;
         private TraceLog _log;
-        private List<debug_item> _renders;
+        private Dictionary<float, List<debug_item>> _renders;
+        private Stack<debug_item> _unused;
         private Transform _line;
     }
 

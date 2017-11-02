@@ -21,18 +21,23 @@ namespace BCUnity
         {
             get
             {
-                return this._last_time > 0;
+                return this._last_time >= 0;
             }
         }
 
         public void Reset()
         {
-            this._last_time = 0;
+            if (this.IsRunning)
+            {
+                this._last_time = UnityEngine.Time.fixedTime;
+            }
+            this._last_time = -1;
             this._elapsed_time = 0;
         }
 
         public void Start()
         {
+            this._tick();
             if (!this.IsRunning)
             {
                 this._last_time = UnityEngine.Time.fixedTime;
@@ -42,7 +47,7 @@ namespace BCUnity
         public void Pause()
         {
             this._tick();
-            this._last_time = 0;
+            this._last_time = -1;
         }
 
         private void _tick()

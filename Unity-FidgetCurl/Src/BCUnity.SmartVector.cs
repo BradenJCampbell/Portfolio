@@ -45,6 +45,14 @@ namespace BCUnity
             return new BCUnity.SmartVector(x, y, z, SmartVectorType.Direction, Space);
         }
 
+        public static SmartVector Empty
+        {
+            get
+            {
+                return _empty;
+            }
+        }
+
         public static SmartVector Zero
         {
             get
@@ -122,6 +130,7 @@ namespace BCUnity
             this._pos = Vector;
             this._type = Type;
             this._space = Space;
+            this._exists = true;
         }
 
         private SmartVector(float x, float y, float z, SmartVectorType Type = SmartVectorType.Vector, Transform Space = null) : this(new Vector3(x, y, z), Type, Space)
@@ -389,6 +398,7 @@ namespace BCUnity
         private Vector3 _pos;
         private Transform _space;
         private SmartVectorType _type;
-
+        private bool _exists;
+        private static SmartVector _empty = new SmartVector();
     }
 }
